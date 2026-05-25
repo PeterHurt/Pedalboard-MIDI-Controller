@@ -1,11 +1,14 @@
 #include <MIDIUSB.h>
 
+// adjust these to suit your button matrix
 const byte ROWS = 8;
 const byte COLS = 4;
 
+// adjust these to match the wiring to your Arduino
 const byte rowPins[ROWS] = {6, 7, 8, 9, 10, 11, 12, 13};
 const byte colPins[COLS] = {2, 3, 4, 5};
 
+// mapping the standard MIDI note values to each point on the button matrix
 const byte notes[ROWS][COLS] = {
   {36, 44, 52, 60},
   {37, 45, 53, 61},
@@ -17,21 +20,20 @@ const byte notes[ROWS][COLS] = {
   {43, 51, 59, 67}
 };
 
-// current stable state of each key
-bool keyState[ROWS][COLS];
+bool keyState[ROWS][COLS]; // current state of each key
 
-// last raw reading
-bool lastReading[ROWS][COLS];
+bool lastReading[ROWS][COLS]; // last raw reading
 
-// debounce timer
-unsigned long lastDebounceTime[ROWS][COLS];
+unsigned long lastDebounceTime[ROWS][COLS]; // debounce timer
 
 const unsigned long debounceDelay = 15;
 
 void setup() {
   Serial.begin(115200);
 
-  // rows = inputs with pullups
+  // this logic seems inverse to the physical wiring
+
+  // rows = inputs with the inbuilt Arduino pullup resistors
   for (byte r = 0; r < ROWS; r++) {
     pinMode(rowPins[r], INPUT_PULLUP);
   }
@@ -51,26 +53,24 @@ void scanMatrix() {
 
   for (byte c = 0; c < COLS; c++) {
 
-    // activate one column
-    digitalWrite(colPins[c], LOW);
+    digitalWrite(colPins[c], LOW); // activate one column
 
     delayMicroseconds(5);
 
     for (byte r = 0; r < ROWS; r++) {
 
-      // LOW means pressed
-      bool reading = (digitalRead(rowPins[r]) == LOW);
+      bool reading = (digitalRead(rowPins[r]) == LOW); // LOW when pressed
 
-      // reading changed?
+      // test if the reading has changed
       if (reading != lastReading[r][c]) {
         lastDebounceTime[r][c] = millis();
         lastReading[r][c] = reading;
       }
 
-      // stable long enough?
+      // once stable
       if ((millis() - lastDebounceTime[r][c]) > debounceDelay) {
 
-        // actual state changed?
+        // if the state change remains, trigger the appropriate MIDI function
         if (reading != keyState[r][c]) {
 
           keyState[r][c] = reading;
@@ -78,7 +78,7 @@ void scanMatrix() {
           if (reading) {
             noteOn(notes[r][c], 127);
 
-            //Serial.print("ON  ");
+            //Serial.print("ON  "); // uncomment these four lines for serial debugging
             //Serial.println(notes[r][c]);
 
           } else {
