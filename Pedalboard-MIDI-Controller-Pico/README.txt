@@ -1,0 +1,1 @@
+To note - the code translation for the Raspberry Pi Pico was generated using an AI tool.
